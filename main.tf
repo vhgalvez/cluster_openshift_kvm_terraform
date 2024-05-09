@@ -34,17 +34,18 @@ resource "libvirt_pool" "volumetmp" {
 
 resource "libvirt_volume" "base_flatcar" {
   name   = "${var.cluster_name}-flatcar-base"
-  source = var.flatcar_base_image
+  source = var.flatcar_base_image # Use the variable here
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
 }
 
 resource "libvirt_volume" "base_rocky" {
   name   = "${var.cluster_name}-rocky-base"
-  source = var.rocky_base_image
+  source = var.rocky_base_image # And here
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
 }
+
 
 data "template_file" "flatcar_vm-configs" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
@@ -91,8 +92,8 @@ data "template_file" "rocky_vm-configs" {
 resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
-  name    = "${each.key}-cloudinit.iso"
-  pool    = libvirt_pool.volumetmp.name
+  name      = "${each.key}-cloudinit.iso"
+  pool      = libvirt_pool.volumetmp.name
   user_data = data.template_file.rocky_vm-configs[each.key].rendered
 }
 
