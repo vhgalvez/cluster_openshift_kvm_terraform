@@ -49,7 +49,7 @@ resource "libvirt_volume" "base_rocky" {
 data "template_file" "flatcar_vm-configs" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
-  template = file("${path.module}/configs/flatcar-${each.key}-config.yaml.tmpl")
+  template = file("${path.module}/configs/machine-${each.key}-config.yaml.tmpl")
 
   vars = {
     ssh_keys  = jsonencode(var.ssh_keys),
