@@ -1,3 +1,4 @@
+# variables.tf
 variable "flatcar_base_image" {
   description = "Path to the base VM image for Flatcar Container Linux"
   type        = string
@@ -24,12 +25,11 @@ variable "vm_definitions" {
     cpus   = number
     memory = number
     ip     = string
-    type   = string
   }))
 }
 
 variable "vm_rockylinux_definitions" {
-  description = "Definitions of virtual machines including CPU, memory configuration, and IP for Rocky Linux"
+  description = "Definitions of Rocky Linux virtual machines including CPU, memory configuration, and IP"
   type = map(object({
     cpus   = number
     memory = number
