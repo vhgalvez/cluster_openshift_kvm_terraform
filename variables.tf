@@ -39,13 +39,11 @@ variable "rocky_vm_definitions" {
   }))
 }
 
-# Ruta a la imagen ISO de Rocky Linux
-variable "rocky_iso_path" {
-  description = "Path to the Rocky Linux ISO image"
+variable "flatcar_base_image" {
+  description = "Path to the base VM image for Flatcar Container Linux"
   type        = string
 }
 
-# Ruta al archivo base para las VMs con Rocky Linux
 variable "rocky_base_image" {
   description = "Path to the base VM image for Rocky Linux VMs"
   type        = string
