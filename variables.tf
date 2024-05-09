@@ -1,3 +1,4 @@
+# variables.tf
 variable "flatcar_base_image" {
   description = "Path to the base VM image for Flatcar Container Linux"
   type        = string

@@ -33,31 +33,30 @@ resource "libvirt_pool" "volumetmp" {
 }
 
 data "libvirt_volume" "base_flatcar" {
-  name   = "flatcar_production_qemu_image.img"
-  pool   = "default"
+  name = var.flatcar_base_image
+  pool = "default"
 }
 
 data "libvirt_volume" "base_rocky" {
-  name   = "Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-  pool   = "default"
+  name = var.rocky_base_image
+  pool = "default"
 }
 
 resource "libvirt_volume" "vm_flatcar" {
-  for_each = { for k, v in var.vm_definitions if v.type == "flatcar" : k => v }
-  name     = "${var.cluster_name}-flatcar-${each.key}"
+  for_each       = var.vm_definitions
+  name           = "${var.cluster_name}-flatcar-${each.key}"
   base_volume_id = data.libvirt_volume.base_flatcar.id
-  pool     = libvirt_pool.volumetmp.name
-  format   = "qcow2"
+  pool           = libvirt_pool.volumetmp.name
+  format         = "qcow2"
 }
 
 resource "libvirt_volume" "vm_rocky" {
-  for_each = { for k, v in var.vm_definitions if v.type == "rocky" : k => v }
-  name     = "${var.cluster_name}-rocky-${each.key}"
+  for_each       = var.vm_rockylinux_definitions
+  name           = "${var.cluster_name}-rocky-${each.key}"
   base_volume_id = data.libvirt_volume.base_rocky.id
-  pool     = libvirt_pool.volumetmp.name
-  format   = "qcow2"
+  pool           = libvirt_pool.volumetmp.name
+  format         = "qcow2"
 }
-
 
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions
@@ -73,7 +72,31 @@ resource "libvirt_domain" "vm" {
   }
 
   disk {
-    volume_id = each.value.type == "flatcar" ? libvirt_volume.vm_flatcar[each.key].id : libvirt_volume.vm_rocky[each.key].id
+    volume_id = libvirt_volume.vm_flatcar[each.key].id
+  }
+
+  graphics {
+    type        = "vnc"
+    listen_type = "address"
+    autoport    = true
+  }
+}
+
+resource "libvirt_domain" "vm_rocky" {
+  for_each = var.vm_rockylinux_definitions
+
+  name   = each.key
+  vcpu   = each.value.cpus
+  memory = each.value.memory
+
+  network_interface {
+    network_id     = libvirt_network.kube_network.id
+    wait_for_lease = true
+    addresses      = [each.value.ip]
+  }
+
+  disk {
+    volume_id = libvirt_volume.vm_rocky[each.key].id
   }
 
   graphics {
@@ -84,9 +107,9 @@ resource "libvirt_domain" "vm" {
 }
 
 output "ip_addresses_flatcar" {
-  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if var.vm_definitions[key].type == "flatcar" }
+  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if contains(keys(var.vm_definitions), key) }
 }
 
 output "ip_addresses_rocky" {
-  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if var.vm_definitions[key].type == "rocky" }
+  value = { for key, vm in libvirt_domain.vm_rocky : key => vm.network_interface[0].addresses[0] if contains(keys(var.vm_rockylinux_definitions), key) }
 }
