@@ -15,6 +15,7 @@ terraform {
     }
   }
 }
+
 provider "libvirt" {
   uri = "qemu:///system"
 }
@@ -31,25 +32,32 @@ resource "libvirt_pool" "volumetmp" {
   path = "/var/lib/libvirt/images/${var.cluster_name}"
 }
 
-# Asegúrate de que todos los recursos estén declarados correctamente
-resource "libvirt_volume" "base_flatcar" {
-  for_each       = var.vm_definitions
-  name           = "${var.cluster_name}-flatcar-${each.key}"
-  base_volume_id = data.libvirt_volume.base_flatcar.id # Asegúrate de que este data source esté definido y apuntando a la imagen base
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+data "libvirt_volume" "base_flatcar" {
+  name   = "flatcar_production_qemu_image.img"
+  pool   = "default"
 }
 
-resource "libvirt_volume" "base_rocky" {
-  for_each       = var.vm_definitions
-  name           = "${var.cluster_name}-rocky-${each.key}"
-  base_volume_id = data.libvirt_volume.base_rocky.id # Asegúrate de que este data source esté definido y apuntando a la imagen base
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+data "libvirt_volume" "base_rocky" {
+  name   = "Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  pool   = "default"
 }
 
+resource "libvirt_volume" "vm_flatcar" {
+  for_each = { for k, v in var.vm_definitions if v.type == "flatcar" : k => v }
+  name     = "${var.cluster_name}-flatcar-${each.key}"
+  base_volume_id = data.libvirt_volume.base_flatcar.id
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
+}
 
-# Actualiza esto para usar `for_each` consistentemente
+resource "libvirt_volume" "vm_rocky" {
+  for_each = { for k, v in var.vm_definitions if v.type == "rocky" : k => v }
+  name     = "${var.cluster_name}-rocky-${each.key}"
+  base_volume_id = data.libvirt_volume.base_rocky.id
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
+}
+
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions
 
@@ -64,7 +72,7 @@ resource "libvirt_domain" "vm" {
   }
 
   disk {
-    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar[each.key].id : libvirt_volume.base_rocky[each.key].id
+    volume_id = each.value.type == "flatcar" ? libvirt_volume.vm_flatcar[each.key].id : libvirt_volume.vm_rocky[each.key].id
   }
 
   graphics {
