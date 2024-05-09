@@ -9,7 +9,7 @@ vm_definitions = {
   "worker1"   = { cpus = 2, memory = 2048, ip = "10.17.3.14" },
   "worker2"   = { cpus = 2, memory = 2048, ip = "10.17.3.15" },
   "worker3"   = { cpus = 2, memory = 2048, ip = "10.17.3.16" },
-  "bootstrap" = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
+  "bootstrap1" = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
 }
 rocky_vm_definitions = {
   "bastion"      = { cpus = 2, memory = 2048, ip = "10.17.3.21" },
