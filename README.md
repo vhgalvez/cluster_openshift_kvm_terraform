@@ -82,8 +82,9 @@
 
 ### Seguridad y Protección
 
-**Firewall y Fail2Ban:** Protección contra accesos no autorizados y ataques.
-**DNS y FreeIPA:** Gestión centralizada de autenticación y políticas de seguridad.
+**Firewall** : Configuración de reglas de firewall para proteger el clúster.
+**Fail2Ban**: Protección contra accesos no autorizados y ataques.
+**DNS y FreeIPA**: Gestión centralizada de autenticación y políticas de seguridad y Servidor de DNS
 
 
 
