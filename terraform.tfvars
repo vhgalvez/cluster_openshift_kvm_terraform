@@ -1,5 +1,5 @@
 flatcar_base_image = "/var/lib/libvirt/images/flatcar_image/flatcar_image/flatcar_production_qemu_image.img"
-rocky_base_image   = "/var/lib/libvirt/images/rocky_linux_base.qcow2"
+rocky_base_image   = "/var/lib/libvirt/images/rocky_image/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
 cluster_name       = "cluster_cefaslocalserver"
 cluster_domain     = "cefaslocalserver.com"
 
