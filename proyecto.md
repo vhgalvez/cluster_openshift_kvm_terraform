@@ -1,4 +1,6 @@
-# main.tf
+flatcar-container-linux  funcina bien , pero rocky linux minimal no funcina bien
+
+# main.tf 
 terraform {
   required_version = ">= 0.13"
 
@@ -194,6 +196,7 @@ variable "rocky_base_image" {
   description = "Path to the base VM image for Rocky Linux VMs"
   type        = string
 }
+
 
 
 # terraform.tfvars

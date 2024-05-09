@@ -7,6 +7,7 @@ variable "base_image" {
 variable "vm_definitions" {
   description = "Definitions of virtual machines including CPU and memory configuration"
   type = map(object({
+    type   = string
     cpus   = number
     memory = number
     ip     = string
