@@ -42,21 +42,20 @@ data "libvirt_volume" "base_rocky" {
   pool = "default"
 }
 
-resource "libvirt_volume" "vm_flatcar" {
-  for_each       = var.vm_definitions
-  name           = "${var.cluster_name}-flatcar-${each.key}"
-  base_volume_id = data.libvirt_volume.base_flatcar.id
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+resource "libvirt_volume" "base_flatcar" {
+  name   = "flatcar_production_qemu_image.img"
+  pool   = "default"
+  source = var.flatcar_base_image
+  format = "qcow2"
 }
 
-resource "libvirt_volume" "vm_rocky" {
-  for_each       = var.vm_rockylinux_definitions
-  name           = "${var.cluster_name}-rocky-${each.key}"
-  base_volume_id = data.libvirt_volume.base_rocky.id
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+resource "libvirt_volume" "base_rocky" {
+  name   = "Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
+  pool   = "default"
+  source = var.rocky_base_image
+  format = "qcow2"
 }
+
 
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions

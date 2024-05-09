@@ -24,12 +24,20 @@ variable "vm_definitions" {
   type = map(object({
     cpus   = number
     memory = number
-    ip     = string
-    type   = string # Type can be 'flatcar' or 'rocky'
   }))
 }
 
 variable "ssh_keys" {
   description = "List of SSH keys to inject into VMs"
   type        = list(string)
+}
+
+
+variable "vm_rockylinux_definitions" {
+  description = "Definitions of Rocky Linux virtual machines including CPU, memory configuration, and IP"
+  type = map(object({
+    cpus   = number
+    memory = number
+    ip     = string
+  }))
 }
