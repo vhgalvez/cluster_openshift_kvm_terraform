@@ -43,20 +43,21 @@ data "libvirt_volume" "base_rocky" {
 }
 
 resource "libvirt_volume" "vm_flatcar" {
-  for_each       = { for k, v in var.vm_definitions if v.type == "flatcar" : k => v }
-  name           = "${var.cluster_name}-flatcar-${each.key}"
+  for_each = { for k, v in var.vm_definitions if v.type == "flatcar" : k => v }
+  name     = "${var.cluster_name}-flatcar-${each.key}"
   base_volume_id = data.libvirt_volume.base_flatcar.id
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
 }
 
 resource "libvirt_volume" "vm_rocky" {
-  for_each       = { for k, v in var.vm_definitions if v.type == "rocky" : k => v }
-  name           = "${var.cluster_name}-rocky-${each.key}"
+  for_each = { for k, v in var.vm_definitions if v.type == "rocky" : k => v }
+  name     = "${var.cluster_name}-rocky-${each.key}"
   base_volume_id = data.libvirt_volume.base_rocky.id
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
 }
+
 
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions
