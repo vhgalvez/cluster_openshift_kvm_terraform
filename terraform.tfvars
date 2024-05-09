@@ -1,7 +1,7 @@
 # terraform.tfvars
-base_image       = "/var/lib/libvirt/images/flatcar_image/flatcar_production_qemu_image.img"
+base_image       = "/var/lib/libvirt/images/flatcar_image/flatcar_image/flatcar_production_qemu_image.img"
 rocky_base_image = "/var/lib/libvirt/images/rocky_linux_base.qcow2"
-rocky_iso_path   = "/var/lib/libvirt/images/Rocky_Linux-8.4-x86_64-minimal.iso"
+rocky_iso_path   = "/var/lib/libvirt/images/roky_linux_mininal_isos/Rocky-9.3-x86_64-minimal.iso"
 vm_definitions = {
   "master1"   = { cpus = 2, memory = 2048, ip = "10.17.3.11" },
   "master2"   = { cpus = 2, memory = 2048, ip = "10.17.3.12" },
