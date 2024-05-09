@@ -64,19 +64,19 @@
 
 #### Análisis y Visualización de Datos
 
-- **ELK Stack Elasticsearch**:visualización de métricas del clúster
-- **ELK Stack Kibana** Visualización de datos
+- **ELK Stack Elasticsearch**: Visualización de métricas del clúster
+- **ELK Stack Kibana**: Visualización de datos
 - **ELK Stack Logstash**: Procesamiento de logs
-- **Prometheus**: Herramientas para el monitoreo
-- **Grafana**: visualización de métricas del clúster
+- **Prometheus**: Herramientas para el monitoreo , alertas **alertmanager** y visualización de métricas
+- **Grafana**: Visualización de métricas del clúster
 - **cAdvisor**: Monitorear el rendimiento y uso de recursos por parte de los contenedores.
-- **Nagios**: para salud y rendimiento del sistema
+- **Nagios**: Rendimiento del sistema
 
 #### Microservicios de servicios de Aplicaciones
 
-**Nginx:** Servidor web y proxy inverso para aplicaciones web.
-**Apache Kafka:** Plataforma de mensajería utilizada para la comunicación entre microservicios.
-**Redis:** Almacenamiento en caché y base de datos en memoria para mejorar el rendimiento de las aplicaciones.
+- **Nginx:** Servidor web y proxy inverso para aplicaciones web.
+- **Apache Kafka:** Plataforma de mensajería utilizada para la comunicación entre microservicios.
+- **Redis:** Almacenamiento en caché y base de datos en memoria para mejorar el rendimiento de las aplicaciones.
 
 
 
