@@ -69,7 +69,7 @@ resource "libvirt_ignition" "ignition" {
 }
 
 resource "libvirt_volume" "vm_disk" {
-  for_each = { for vm in concat(keys(var.vm_definitions), keys(var.rocky_vm_definitions)) : vm => lookup(var.vm_definitions, vm, null) ?? lookup(var.rocky_vm_definitions, vm, null) }
+  for_each = var.vm_definitions
 
   name           = "${each.key}-${var.cluster_name}.qcow2"
   base_volume_id = libvirt_volume.base.id
@@ -87,7 +87,7 @@ resource "libvirt_domain" "machine" {
   network_interface {
     network_id     = libvirt_network.kube_network.id
     wait_for_lease = true
-    addresses      = [each.value.ip]
+    addresses      = [each.value.ip] # Correctly refer to the IP
   }
 
   disk {
@@ -99,41 +99,6 @@ resource "libvirt_domain" "machine" {
   graphics {
     type        = "vnc"
     listen_type = "address"
-  }
-}
-
-resource "libvirt_domain" "rocky_vm" {
-  for_each = var.rocky_vm_definitions
-
-  name   = each.key
-  vcpu   = each.value.cpus
-  memory = each.value.memory
-
-  network_interface {
-    network_id     = libvirt_network.kube_network.id
-    wait_for_lease = true
-    addresses      = [each.value.ip]
-  }
-
-  disk {
-    volume_id = libvirt_volume.vm_disk[each.key].id
-  }
-
-  console {
-    type        = "pty"
-    target_port = "0"
-    target_type = "serial"
-  }
-
-  graphics {
-    type        = "vnc"
-    listen_type = "address"
-    autoport    = true
-  }
-
-  os_type = "linux"
-  os_boot {
-    dev = ["hd", "cdrom"]
   }
 }
 
