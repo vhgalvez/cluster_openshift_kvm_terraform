@@ -46,8 +46,8 @@ resource "libvirt_volume" "base_rocky" {
   format = "qcow2"
 }
 
-data "template_file" "flatcar_vm-configs" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
+data "template_file" "vm-configs" {
+  for_each = var.vm_definitions
 
   template = file("${path.module}/configs/machine-${each.key}-config.yaml.tmpl")
 
@@ -58,42 +58,22 @@ data "template_file" "flatcar_vm-configs" {
   }
 }
 
-data "template_file" "rocky_vm-configs" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
+data "ct_config" "vm-ignitions" {
+  for_each = var.vm_definitions
 
-  template = file("${path.module}/configs/rocky-${each.key}-config.yaml.tmpl")
-
-  vars = {
-    ssh_keys  = jsonencode(var.ssh_keys),
-    name      = each.key,
-    host_name = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
-  }
+  content = data.template_file.vm-configs[each.key].rendered
 }
 
-data "ct_config" "flatcar_vm-ignitions" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
-
-  content = data.template_file.flatcar_vm-configs[each.key].rendered
-}
-
-resource "libvirt_ignition" "flatcar_ignition" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
+resource "libvirt_ignition" "vm_ignition" {
+  for_each = var.vm_definitions
 
   name    = "${each.key}-ignition"
   pool    = libvirt_pool.volumetmp.name
-  content = data.ct_config.flatcar_vm-ignitions[each.key].rendered
+  content = data.ct_config.vm-ignitions[each.key].rendered
 }
 
-resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
-
-  name      = "${each.key}-cloudinit.iso"
-  pool      = libvirt_pool.volumetmp.name
-  user_data = data.template_file.rocky_vm-configs[each.key].rendered
-}
-
-resource "libvirt_domain" "flatcar_vm" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
+resource "libvirt_domain" "vm" {
+  for_each = var.vm_definitions
 
   name   = each.key
   vcpu   = each.value.cpus
@@ -106,37 +86,10 @@ resource "libvirt_domain" "flatcar_vm" {
   }
 
   disk {
-    volume_id = libvirt_volume.base_flatcar.id
+    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar.id : libvirt_volume.base_rocky.id
   }
 
-  coreos_ignition = libvirt_ignition.flatcar_ignition[each.key].id
-
-  graphics {
-    type        = "vnc"
-    listen_type = "address"
-  }
-}
-
-resource "libvirt_domain" "rocky_vm" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
-
-  name   = each.key
-  vcpu   = each.value.cpus
-  memory = each.value.memory
-
-  network_interface {
-    network_id     = libvirt_network.kube_network.id
-    wait_for_lease = true
-    addresses      = [each.value.ip]
-  }
-
-  disk {
-    volume_id = libvirt_volume.base_rocky.id
-  }
-
-  disk {
-    volume_id = libvirt_cloudinit_disk.rocky_cloudinit[each.key].id
-  }
+  coreos_ignition = libvirt_ignition.vm_ignition[each.key].id
 
   graphics {
     type        = "vnc"
@@ -146,9 +99,9 @@ resource "libvirt_domain" "rocky_vm" {
 }
 
 output "ip_addresses_flatcar" {
-  value = { for key, vm in libvirt_domain.flatcar_vm : key => vm.network_interface[0].addresses[0] }
+  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if vm_definitions[key].type == "flatcar" }
 }
 
 output "ip_addresses_rocky" {
-  value = { for key, vm in libvirt_domain.rocky_vm : key => vm.network_interface[0].addresses[0] }
+  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if vm_definitions[key].type == "rocky" }
 }
