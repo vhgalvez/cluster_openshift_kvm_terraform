@@ -1,6 +1,3 @@
-flatcar-container-linux  funcina bien , pero rocky linux minimal no funcina bien
-
-# main.tf 
 terraform {
   required_version = ">= 0.13"
 
@@ -36,18 +33,25 @@ resource "libvirt_pool" "volumetmp" {
   path = "/var/lib/libvirt/images/${var.cluster_name}"
 }
 
-resource "libvirt_volume" "base" {
-  name   = "${var.cluster_name}-base"
-  source = var.base_image
+resource "libvirt_volume" "base_flatcar" {
+  name   = "${var.cluster_name}-flatcar-base"
+  source = var.flatcar_base_image
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
 }
 
-data "template_file" "vm-configs" {
-  for_each = var.vm_definitions
+resource "libvirt_volume" "base_rocky" {
+  name   = "${var.cluster_name}-rocky-base"
+  source = var.rocky_base_image
+  pool   = libvirt_pool.volumetmp.name
+  format = "qcow2"
+}
 
-  template = file("${path.module}/configs/machine-${each.key}-config.yaml.tmpl")
+# Template para Flatcar
+data "template_file" "flatcar_vm-configs" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
+  template = file("${path.module}/configs/flatcar-${each.key}-config.yaml.tmpl")
   vars = {
     ssh_keys     = jsonencode(var.ssh_keys),
     name         = each.key,
@@ -57,32 +61,47 @@ data "template_file" "vm-configs" {
   }
 }
 
-data "ct_config" "vm-ignitions" {
-  for_each = var.vm_definitions
+# Template para Rocky Linux
+data "template_file" "rocky_vm-configs" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
-  content = data.template_file.vm-configs[each.key].rendered
+  template = file("${path.module}/configs/rocky-${each.key}-config.yaml.tmpl")
+  vars = {
+    ssh_keys     = jsonencode(var.ssh_keys),
+    name         = each.key,
+    host_name    = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
+    strict       = true,
+    pretty_print = true
+  }
 }
 
-resource "libvirt_ignition" "ignition" {
-  for_each = var.vm_definitions
+# Ignition para Flatcar
+data "ct_config" "flatcar_vm-ignitions" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
+
+  content = data.template_file.flatcar_vm-configs[each.key].rendered
+}
+
+resource "libvirt_ignition" "flatcar_ignition" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
   name    = "${each.key}-ignition"
   pool    = libvirt_pool.volumetmp.name
-  content = data.ct_config.vm-ignitions[each.key].rendered
+  content = data.ct_config.flatcar_vm-ignitions[each.key].rendered
 }
 
-resource "libvirt_volume" "vm_disk" {
-  for_each = { for vm, definition in merge(var.vm_definitions, var.rocky_vm_definitions) : vm => definition }
+# Cloud-init ISO para Rocky
+resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
-  name           = "${each.key}-${var.cluster_name}.qcow2"
-  base_volume_id = libvirt_volume.base.id
-  pool           = libvirt_pool.volumetmp.name
-  format         = "qcow2"
+  name    = "${each.key}-cloudinit.iso"
+  pool    = libvirt_pool.volumetmp.name
+  user_data = data.template_file.rocky_vm-configs[each.key].rendered
 }
 
-
-resource "libvirt_domain" "machine" {
-  for_each = var.vm_definitions
+# VMs Flatcar
+resource "libvirt_domain" "flatcar_vm" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
   name   = each.key
   vcpu   = each.value.cpus
@@ -95,10 +114,10 @@ resource "libvirt_domain" "machine" {
   }
 
   disk {
-    volume_id = libvirt_volume.vm_disk[each.key].id
+    volume_id = libvirt_volume.base_flatcar.id
   }
 
-  coreos_ignition = libvirt_ignition.ignition[each.key].id
+  coreos_ignition = libvirt_ignition.flatcar_ignition[each.key].id
 
   graphics {
     type        = "vnc"
@@ -106,8 +125,9 @@ resource "libvirt_domain" "machine" {
   }
 }
 
+# VMs Rocky
 resource "libvirt_domain" "rocky_vm" {
-  for_each = var.rocky_vm_definitions
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
   name   = each.key
   vcpu   = each.value.cpus
@@ -120,13 +140,11 @@ resource "libvirt_domain" "rocky_vm" {
   }
 
   disk {
-    volume_id = libvirt_volume.vm_disk[each.key].id
+    volume_id = libvirt_volume.base_rocky.id
   }
 
-  console {
-    type        = "pty"
-    target_port = "0"
-    target_type = "serial"
+  disk {
+    volume_id = libvirt_cloudinit_disk.rocky_cloudinit[each.key].id
   }
 
   graphics {
@@ -136,28 +154,39 @@ resource "libvirt_domain" "rocky_vm" {
   }
 }
 
-
-output "ip_addresses" {
-  value = { for key, machine in libvirt_domain.machine : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
+output "ip_addresses_flatcar" {
+  value = { for key, vm in libvirt_domain.flatcar_vm : key => vm.network_interface[0].addresses[0] }
 }
 
-output "rocky_ip_addresses" {
-  value = { for key, machine in libvirt_domain.rocky_vm : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
+output "ip_addresses_rocky" {
+  value = { for key, vm in libvirt_domain.rocky_vm : key => vm.network_interface[0].addresses[0] }
 }
 
-# variables.tf
-variable "base_image" {
-  description = "Path to the base VM image"
+
+
+variable "flatcar_base_image" {
+  description = "Path to the base VM image for Flatcar Container Linux"
   type        = string
 }
 
+variable "rocky_base_image" {
+  description = "Path to the base VM image for Rocky Linux VMs"
+  type        = string
+}
+
+variable "base_image" {
+  description = "Generic base VM image path, if needed"
+  type        = string
+  default     = ""
+}
+
 variable "vm_definitions" {
-  description = "Definitions of virtual machines including CPU and memory configuration"
+  description = "Definitions of virtual machines including CPU, memory configuration, and OS type"
   type = map(object({
     cpus   = number
     memory = number
     ip     = string
-
+    type   = string # Type can be 'flatcar' or 'rocky'
   }))
 }
 
@@ -175,56 +204,36 @@ variable "cluster_domain" {
   description = "Domain name of the cluster"
   type        = string
 }
-# Definiciones adicionales de máquinas virtuales para Rocky Linux
-variable "rocky_vm_definitions" {
-  description = "Definitions of virtual machines for Rocky Linux including CPU and memory configuration"
-  type = map(object({
-    cpus   = number
-    memory = number
-    ip     = string
-  }))
-}
 
-# Ruta a la imagen ISO de Rocky Linux
 variable "rocky_iso_path" {
   description = "Path to the Rocky Linux ISO image"
   type        = string
 }
 
-# Ruta al archivo base para las VMs con Rocky Linux
-variable "rocky_base_image" {
-  description = "Path to the base VM image for Rocky Linux VMs"
-  type        = string
-}
-
-
 
 # terraform.tfvars
-base_image       = "/var/lib/libvirt/images/flatcar_image/flatcar_image/flatcar_production_qemu_image.img"
-rocky_base_image = "/var/lib/libvirt/images/rocky_linux_base.qcow2"
+base_image = "/var/lib/libvirt/images/flatcar_image/flatcar_image/flatcar_production_qemu_image.img"
 rocky_iso_path   = "/var/lib/libvirt/images/roky_linux_mininal_isos/Rocky-9.3-x86_64-minimal.iso"
+
 vm_definitions = {
-  "master1"   = { cpus = 2, memory = 2048, ip = "10.17.3.11" },
-  "master2"   = { cpus = 2, memory = 2048, ip = "10.17.3.12" },
-  "master3"   = { cpus = 2, memory = 2048, ip = "10.17.3.13" },
-  "worker1"   = { cpus = 2, memory = 2048, ip = "10.17.3.14" },
-  "worker2"   = { cpus = 2, memory = 2048, ip = "10.17.3.15" },
-  "worker3"   = { cpus = 2, memory = 2048, ip = "10.17.3.16" },
-  "bootstrap1" = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-}
-rocky_vm_definitions = {
-  "bastion"      = { cpus = 2, memory = 2048, ip = "10.17.3.21" },
-  "freeipa"      = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-  "loadbalancer" = { cpus = 2, memory = 2048, ip = "10.17.3.18" },
-  "postgres"     = { cpus = 2, memory = 2048, ip = "10.17.3.20" },
-}
+
+  "master1"    =  { cpus = 2, memory = 2048, ip = "10.17.3.11" type = "flatcar"},
+  "master2"    =  { cpus = 2, memory = 2048, ip = "10.17.3.12" type = "flatcar" },
+  "master3"    =  { cpus = 2, memory = 2048, ip = "10.17.3.13" type = "flatcar" },
+  "worker1"    =  { cpus = 2, memory = 2048, ip = "10.17.3.14" type = "flatcar" },
+  "worker2"    =  { cpus = 2, memory = 2048, ip = "10.17.3.15" type = "flatcar" },
+  "worker3"    =  { cpus = 2, memory = 2048, ip = "10.17.3.16" type = "flatcar" },
+  "bootstrap1" =  { cpus = 2, memory = 2048, ip = "10.17.3.17" type = "flatcar" },
+  "bastion"      = { cpus = 2, memory = 2048, ip = "10.17.3.21" type = "rocky" },
+  "freeipa"      = { cpus = 2, memory = 2048, ip = "10.17.3.17" type = "flatcar" },
+  "loadbalancer" = { cpus = 2, memory = 2048, ip = "10.17.3.18" type = "flatcar" },
+  "postgres"     = { cpus = 2, memory = 2048, ip = "10.17.3.20" type = "flatcar" },
+
 ssh_keys       = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDC9XqGWEd2de3Ud8TgvzFchK2/SYh+WHohA1KEuveXjCbse9aXKmNAZ369vaGFFGrxbSptMeEt41ytEFpU09gAXM6KSsQWGZxfkCJQSWIaIEAdft7QHnTpMeronSgYZIU+5P7/RJcVhHBXfjLHV6giHxFRJ9MF7n6sms38VsuF2s4smI03DWGWP6Ro7siXvd+LBu2gDqosQaZQiz5/FX5YWxvuhq0E/ACas/JE8fjIL9DQPcFrgQkNAv1kHpIWRqSLPwyTMMxGgFxGI8aCTH/Uaxbqa7Qm/aBfdG2lZBE1XU6HRjAToFmqsPJv4LkBxaC1Ag62QPXONNxAA97arICr vhgalvez@gmail.com"]
 cluster_name   = "cluster_cefaslocalserver"
 cluster_domain = "cefaslocalserver.com"
 
-
-
-configucion esta bien funcina bien.
+configuracion esta bien funcina bien.
 ## usa flatcar container linux
 configs\machine-bastion-1-config.yaml.tmpl
 ---

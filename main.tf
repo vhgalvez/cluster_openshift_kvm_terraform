@@ -1,6 +1,5 @@
 terraform {
   required_version = ">= 0.13"
-
   required_providers {
     libvirt = {
       source  = "dmacvicar/libvirt"
@@ -47,11 +46,11 @@ resource "libvirt_volume" "base_rocky" {
   format = "qcow2"
 }
 
-# Template para Flatcar
 data "template_file" "flatcar_vm-configs" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
   template = file("${path.module}/configs/flatcar-${each.key}-config.yaml.tmpl")
+
   vars = {
     ssh_keys     = jsonencode(var.ssh_keys),
     name         = each.key,
@@ -61,21 +60,6 @@ data "template_file" "flatcar_vm-configs" {
   }
 }
 
-# Template para Rocky Linux
-data "template_file" "rocky_vm-configs" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
-
-  template = file("${path.module}/configs/rocky-${each.key}-config.yaml.tmpl")
-  vars = {
-    ssh_keys     = jsonencode(var.ssh_keys),
-    name         = each.key,
-    host_name    = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
-    strict       = true,
-    pretty_print = true
-  }
-}
-
-# Ignition para Flatcar
 data "ct_config" "flatcar_vm-ignitions" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
@@ -90,7 +74,20 @@ resource "libvirt_ignition" "flatcar_ignition" {
   content = data.ct_config.flatcar_vm-ignitions[each.key].rendered
 }
 
-# Cloud-init ISO para Rocky
+data "template_file" "rocky_vm-configs" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
+
+  template = file("${path.module}/configs/rocky-${each.key}-config.yaml.tmpl")
+
+  vars = {
+    ssh_keys     = jsonencode(var.ssh_keys),
+    name         = each.key,
+    host_name    = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
+    strict       = true,
+    pretty_print = true
+  }
+}
+
 resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
@@ -99,7 +96,6 @@ resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
   user_data = data.template_file.rocky_vm-configs[each.key].rendered
 }
 
-# VMs Flatcar
 resource "libvirt_domain" "flatcar_vm" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
@@ -125,7 +121,6 @@ resource "libvirt_domain" "flatcar_vm" {
   }
 }
 
-# VMs Rocky
 resource "libvirt_domain" "rocky_vm" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
