@@ -70,13 +70,14 @@ resource "libvirt_ignition" "ignition" {
 }
 
 resource "libvirt_volume" "vm_disk" {
-  for_each = { for vm in concat(keys(var.vm_definitions), keys(var.rocky_vm_definitions)) : vm => lookup(var.vm_definitions, vm, null) ?? lookup(var.rocky_vm_definitions, vm, null) }
+  for_each = { for vm, definition in merge(var.vm_definitions, var.rocky_vm_definitions) : vm => definition }
 
   name           = "${each.key}-${var.cluster_name}.qcow2"
   base_volume_id = libvirt_volume.base.id
   pool           = libvirt_pool.volumetmp.name
   format         = "qcow2"
 }
+
 
 resource "libvirt_domain" "machine" {
   for_each = var.vm_definitions
