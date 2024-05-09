@@ -11,10 +11,10 @@ vm_definitions = {
   "worker2"       = { cpus = 2, memory = 2048, ip = "10.17.3.15", type = "flatcar" },
   "worker3"       = { cpus = 2, memory = 2048, ip = "10.17.3.16", type = "flatcar" },
   "bootstrap1"    = { cpus = 2, memory = 2048, ip = "10.17.3.17", type = "flatcar" },
-  "bastion"       = { cpus = 2, memory = 2048, ip = "10.17.3.21", type = "rocky" },
-  "freeipa"       = { cpus = 2, memory = 2048, ip = "10.17.3.22", type = "rocky" },
-  "load_balancer" = { cpus = 2, memory = 2048, ip = "10.17.3.18", type = "rocky" },
-  "postgres"      = { cpus = 2, memory = 2048, ip = "10.17.3.20", type = "rocky" }
+  "bastion1"       = { cpus = 2, memory = 2048, ip = "10.17.3.21", type = "rocky" },
+  "freeipa1"       = { cpus = 2, memory = 2048, ip = "10.17.3.22", type = "rocky" },
+  "load_balancer1" = { cpus = 2, memory = 2048, ip = "10.17.3.18", type = "rocky" },
+  "postgresql1"      = { cpus = 2, memory = 2048, ip = "10.17.3.20", type = "rocky" }
 }
 
 ssh_keys = [
