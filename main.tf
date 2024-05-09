@@ -33,20 +33,21 @@ resource "libvirt_pool" "volumetmp" {
 
 # Asegúrate de que todos los recursos estén declarados correctamente
 resource "libvirt_volume" "base_flatcar" {
-  for_each = var.vm_definitions
-  name     = "${var.cluster_name}-flatcar-${each.key}"
-  source   = var.flatcar_base_image
-  pool     = libvirt_pool.volumetmp.name
-  format   = "qcow2"
+  for_each       = var.vm_definitions
+  name           = "${var.cluster_name}-flatcar-${each.key}"
+  base_volume_id = data.libvirt_volume.base_flatcar.id # Asegúrate de que este data source esté definido y apuntando a la imagen base
+  pool           = libvirt_pool.volumetmp.name
+  format         = "qcow2"
 }
 
 resource "libvirt_volume" "base_rocky" {
-  for_each = var.vm_definitions
-  name     = "${var.cluster_name}-rocky-${each.key}"
-  source   = var.rocky_base_image
-  pool     = libvirt_pool.volumetmp.name
-  format   = "qcow2"
+  for_each       = var.vm_definitions
+  name           = "${var.cluster_name}-rocky-${each.key}"
+  base_volume_id = data.libvirt_volume.base_rocky.id # Asegúrate de que este data source esté definido y apuntando a la imagen base
+  pool           = libvirt_pool.volumetmp.name
+  format         = "qcow2"
 }
+
 
 # Actualiza esto para usar `for_each` consistentemente
 resource "libvirt_domain" "vm" {
