@@ -34,18 +34,17 @@ resource "libvirt_pool" "volumetmp" {
 
 resource "libvirt_volume" "base_flatcar" {
   name   = "${var.cluster_name}-flatcar-base"
-  source = var.flatcar_base_image # Use the variable here
+  source = var.flatcar_base_image
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
 }
 
 resource "libvirt_volume" "base_rocky" {
   name   = "${var.cluster_name}-rocky-base"
-  source = var.rocky_base_image # And here
+  source = var.rocky_base_image
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
 }
-
 
 data "template_file" "rocky_vm-configs" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
@@ -59,7 +58,6 @@ data "template_file" "rocky_vm-configs" {
   }
 }
 
-
 data "ct_config" "flatcar_vm-ignitions" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
 
@@ -72,20 +70,6 @@ resource "libvirt_ignition" "flatcar_ignition" {
   name    = "${each.key}-ignition"
   pool    = libvirt_pool.volumetmp.name
   content = data.ct_config.flatcar_vm-ignitions[each.key].rendered
-}
-
-data "template_file" "rocky_vm-configs" {
-  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
-
-  template = file("${path.module}/configs/rocky-${each.key}-config.yaml.tmpl")
-
-  vars = {
-    ssh_keys     = jsonencode(var.ssh_keys),
-    name         = each.key,
-    host_name    = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
-    strict       = true,
-    pretty_print = true
-  }
 }
 
 resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
