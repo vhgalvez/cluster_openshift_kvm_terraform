@@ -15,7 +15,6 @@ terraform {
     }
   }
 }
-
 provider "libvirt" {
   uri = "qemu:///system"
 }
@@ -32,14 +31,24 @@ resource "libvirt_pool" "volumetmp" {
   path = "/var/lib/libvirt/images/${var.cluster_name}"
 }
 
+# Asegúrate de que todos los recursos estén declarados correctamente
 resource "libvirt_volume" "base_flatcar" {
-  count  = length(var.vm_definitions)
-  name   = "${var.cluster_name}-flatcar-base-${count.index}"
-  source = var.flatcar_base_image
-  pool   = libvirt_pool.volumetmp.name
-  format = "qcow2"
+  for_each = var.vm_definitions
+  name     = "${var.cluster_name}-flatcar-${each.key}"
+  source   = var.flatcar_base_image
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
 }
 
+resource "libvirt_volume" "base_rocky" {
+  for_each = var.vm_definitions
+  name     = "${var.cluster_name}-rocky-${each.key}"
+  source   = var.rocky_base_image
+  pool     = libvirt_pool.volumetmp.name
+  format   = "qcow2"
+}
+
+# Actualiza esto para usar `for_each` consistentemente
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions
 
@@ -50,13 +59,12 @@ resource "libvirt_domain" "vm" {
   network_interface {
     network_id     = libvirt_network.kube_network.id
     wait_for_lease = true
+    addresses      = [each.value.ip]
   }
 
   disk {
-    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar[count.index].id : libvirt_volume.base_rocky[count.index].id
+    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar[each.key].id : libvirt_volume.base_rocky[each.key].id
   }
-
-  coreos_ignition = libvirt_ignition.vm_ignition[each.key].id
 
   graphics {
     type        = "vnc"
