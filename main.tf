@@ -132,6 +132,8 @@ resource "libvirt_domain" "rocky_vm" {
     listen_type = "address"
     autoport    = true
   }
+}
+
 
   os_type = "linux"
   os_boot {
