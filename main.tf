@@ -138,3 +138,7 @@ resource "libvirt_domain" "rocky_vm" {
 output "ip_addresses" {
   value = { for key, machine in libvirt_domain.machine : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
 }
+
+output "rocky_ip_addresses" {
+  value = { for key, machine in libvirt_domain.rocky_vm : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
+}
