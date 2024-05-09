@@ -135,12 +135,6 @@ resource "libvirt_domain" "rocky_vm" {
 }
 
 
-  os_type = "linux"
-  os_boot {
-    dev = ["hd", "cdrom"]
-  }
-}
-
 output "ip_addresses" {
   value = { for key, machine in libvirt_domain.machine : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
 }
