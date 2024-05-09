@@ -8,10 +8,14 @@ variable "rocky_base_image" {
   type        = string
 }
 
-variable "base_image" {
-  description = "Generic base VM image path, if needed"
+variable "cluster_name" {
+  description = "Name of the cluster"
   type        = string
-  default     = ""
+}
+
+variable "cluster_domain" {
+  description = "Domain name of the cluster"
+  type        = string
 }
 
 variable "vm_definitions" {
@@ -27,19 +31,4 @@ variable "vm_definitions" {
 variable "ssh_keys" {
   description = "List of SSH keys to inject into VMs"
   type        = list(string)
-}
-
-variable "cluster_name" {
-  description = "Name of the cluster"
-  type        = string
-}
-
-variable "cluster_domain" {
-  description = "Domain name of the cluster"
-  type        = string
-}
-
-variable "rocky_iso_path" {
-  description = "Path to the Rocky Linux ISO image"
-  type        = string
 }
