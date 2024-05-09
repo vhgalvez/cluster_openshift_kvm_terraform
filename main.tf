@@ -33,43 +33,11 @@ resource "libvirt_pool" "volumetmp" {
 }
 
 resource "libvirt_volume" "base_flatcar" {
-  name   = "${var.cluster_name}-flatcar-base"
+  count  = length(var.vm_definitions)
+  name   = "${var.cluster_name}-flatcar-base-${count.index}"
   source = var.flatcar_base_image
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
-}
-
-resource "libvirt_volume" "base_rocky" {
-  name   = "${var.cluster_name}-rocky-base"
-  source = var.rocky_base_image
-  pool   = libvirt_pool.volumetmp.name
-  format = "qcow2"
-}
-
-data "template_file" "vm-configs" {
-  for_each = var.vm_definitions
-
-  template = file("${path.module}/configs/machine-${each.key}-config.yaml.tmpl")
-
-  vars = {
-    ssh_keys  = jsonencode(var.ssh_keys),
-    name      = each.key,
-    host_name = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
-  }
-}
-
-data "ct_config" "vm-ignitions" {
-  for_each = var.vm_definitions
-
-  content = data.template_file.vm-configs[each.key].rendered
-}
-
-resource "libvirt_ignition" "vm_ignition" {
-  for_each = var.vm_definitions
-
-  name    = "${each.key}-ignition"
-  pool    = libvirt_pool.volumetmp.name
-  content = data.ct_config.vm-ignitions[each.key].rendered
 }
 
 resource "libvirt_domain" "vm" {
@@ -82,11 +50,10 @@ resource "libvirt_domain" "vm" {
   network_interface {
     network_id     = libvirt_network.kube_network.id
     wait_for_lease = true
-    addresses      = [each.value.ip]
   }
 
   disk {
-    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar.id : libvirt_volume.base_rocky.id
+    volume_id = each.value.type == "flatcar" ? libvirt_volume.base_flatcar[count.index].id : libvirt_volume.base_rocky[count.index].id
   }
 
   coreos_ignition = libvirt_ignition.vm_ignition[each.key].id
