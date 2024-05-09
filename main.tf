@@ -99,9 +99,9 @@ resource "libvirt_domain" "vm" {
 }
 
 output "ip_addresses_flatcar" {
-  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if vm_definitions[key].type == "flatcar" }
+  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if var.vm_definitions[key].type == "flatcar" }
 }
 
 output "ip_addresses_rocky" {
-  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if vm_definitions[key].type == "rocky" }
+  value = { for key, vm in libvirt_domain.vm : key => vm.network_interface[0].addresses[0] if var.vm_definitions[key].type == "rocky" }
 }
