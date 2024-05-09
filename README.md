@@ -36,7 +36,6 @@
 - **Load Balancer Node**: rocky linux minimal
 - **PostgreSQL Node**: rocky linux minimal
 
-
 ### Máquinas Virtuales y Roles
 
 - **Bastion Node**: Punto de acceso seguro, modo de red Bridge, interfaz enp3s0f1
