@@ -1,4 +1,3 @@
-
 # main.tf
 terraform {
   required_version = ">= 0.13"
@@ -40,6 +39,34 @@ resource "libvirt_volume" "base" {
   source = var.base_image
   pool   = libvirt_pool.volumetmp.name
   format = "qcow2"
+}
+
+data "template_file" "vm-configs" {
+  for_each = var.vm_definitions
+
+  template = file("${path.module}/configs/machine-${each.key}-config.yaml.tmpl")
+
+  vars = {
+    ssh_keys     = jsonencode(var.ssh_keys),
+    name         = each.key,
+    host_name    = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
+    strict       = true,
+    pretty_print = true
+  }
+}
+
+data "ct_config" "vm-ignitions" {
+  for_each = var.vm_definitions
+
+  content = data.template_file.vm-configs[each.key].rendered
+}
+
+resource "libvirt_ignition" "ignition" {
+  for_each = var.vm_definitions
+
+  name    = "${each.key}-ignition"
+  pool    = libvirt_pool.volumetmp.name
+  content = data.ct_config.vm-ignitions[each.key].rendered
 }
 
 resource "libvirt_volume" "vm_disk" {
@@ -114,103 +141,3 @@ resource "libvirt_domain" "rocky_vm" {
 output "ip_addresses" {
   value = { for key, machine in libvirt_domain.machine : key => machine.network_interface[0].addresses[0] if length(machine.network_interface[0].addresses) > 0 }
 }
-
-
-# variables.tf
-variable "base_image" {
-  description = "Path to the base VM image"
-  type        = string
-}
-
-variable "vm_definitions" {
-  description = "Definitions of virtual machines including CPU and memory configuration"
-  type = map(object({
-    cpus   = number
-    memory = number
-    ip     = string
-
-  }))
-}
-
-variable "ssh_keys" {
-  description = "List of SSH keys to inject into VMs"
-  type        = list(string)
-}
-
-variable "cluster_name" {
-  description = "Name of the cluster"
-  type        = string
-}
-
-variable "cluster_domain" {
-  description = "Domain name of the cluster"
-  type        = string
-}
-# Definiciones adicionales de máquinas virtuales para Rocky Linux
-variable "rocky_vm_definitions" {
-  description = "Definitions of virtual machines for Rocky Linux including CPU and memory configuration"
-  type = map(object({
-    cpus   = number
-    memory = number
-    ip     = string
-  }))
-}
-
-# Ruta a la imagen ISO de Rocky Linux
-variable "rocky_iso_path" {
-  description = "Path to the Rocky Linux ISO image"
-  type        = string
-}
-
-# Ruta al archivo base para las VMs con Rocky Linux
-variable "rocky_base_image" {
-  description = "Path to the base VM image for Rocky Linux VMs"
-  type        = string
-}
-
-
-
-# terraform.tfvars
-base_image       = "/var/lib/libvirt/images/flatcar_image/flatcar_production_qemu_image.img"
-rocky_base_image = "/var/lib/libvirt/images/rocky_linux_base.qcow2"
-rocky_iso_path   = "/var/lib/libvirt/images/Rocky_Linux-8.4-x86_64-minimal.iso"
-vm_definitions = {
-  "master1"   = { cpus = 2, memory = 2048, ip = "10.17.3.11" },
-  "master2"   = { cpus = 2, memory = 2048, ip = "10.17.3.12" },
-  "master3"   = { cpus = 2, memory = 2048, ip = "10.17.3.13" },
-  "worker1"   = { cpus = 2, memory = 2048, ip = "10.17.3.14" },
-  "worker2"   = { cpus = 2, memory = 2048, ip = "10.17.3.15" },
-  "worker3"   = { cpus = 2, memory = 2048, ip = "10.17.3.16" },
-  "bootstrap" = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-}
-rocky_vm_definitions = {
-  "bastion"      = { cpus = 2, memory = 2048, ip = "10.17.3.21" },
-  "freeipa"      = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-  "loadbalancer" = { cpus = 2, memory = 2048, ip = "10.17.3.18" },
-  "postgres"     = { cpus = 2, memory = 2048, ip = "10.17.3.20" },
-}
-ssh_keys       = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDC9XqGWEd2de3Ud8TgvzFchK2/SYh+WHohA1KEuveXjCbse9aXKmNAZ369vaGFFGrxbSptMeEt41ytEFpU09gAXM6KSsQWGZxfkCJQSWIaIEAdft7QHnTpMeronSgYZIU+5P7/RJcVhHBXfjLHV6giHxFRJ9MF7n6sms38VsuF2s4smI03DWGWP6Ro7siXvd+LBu2gDqosQaZQiz5/FX5YWxvuhq0E/ACas/JE8fjIL9DQPcFrgQkNAv1kHpIWRqSLPwyTMMxGgFxGI8aCTH/Uaxbqa7Qm/aBfdG2lZBE1XU6HRjAToFmqsPJv4LkBxaC1Ag62QPXONNxAA97arICr vhgalvez@gmail.com"]
-cluster_name   = "cluster_cefaslocalserver"
-cluster_domain = "cefaslocalserver.com"
-
-
-# Proyecto de infraestructura
-
-## flatcar linux container
-
-vm_definitions = {
-  "master1"   = { cpus = 2, memory = 2048, ip = "10.17.3.11" },
-  "master2"   = { cpus = 2, memory = 2048, ip = "10.17.3.12" },
-  "master3"   = { cpus = 2, memory = 2048, ip = "10.17.3.13" },
-  "worker1"   = { cpus = 2, memory = 2048, ip = "10.17.3.14" },
-  "worker2"   = { cpus = 2, memory = 2048, ip = "10.17.3.15" },
-  "worker3"   = { cpus = 2, memory = 2048, ip = "10.17.3.16" },
-  "bootstrap" = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-}
-
-##   Rocky Linux minimal 
-rocky_vm_definitions = {
-  "bastion"      = { cpus = 2, memory = 2048, ip = "10.17.3.21" },
-  "freeipa"      = { cpus = 2, memory = 2048, ip = "10.17.3.17" },
-  "loadbalancer" = { cpus = 2, memory = 2048, ip = "10.17.3.18" },
-  "postgres"     = { cpus = 2, memory = 2048, ip = "10.17.3.20" },
