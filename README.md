@@ -79,13 +79,11 @@
 - **Redis:** Almacenamiento en caché y base de datos en memoria para mejorar el rendimiento de las aplicaciones.
 
 
-
 ### Seguridad y Protección
 
 **Firewall** : Configuración de reglas de firewall para proteger el clúster.
 **Fail2Ban**: Protección contra accesos no autorizados y ataques.
 **DNS y FreeIPA**: Gestión centralizada de autenticación y políticas de seguridad y Servidor de DNS
-
 
 
 ### Almacenamiento persistente
