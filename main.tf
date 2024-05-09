@@ -46,6 +46,18 @@ resource "libvirt_volume" "base_rocky" {
   format = "qcow2"
 }
 
+data "template_file" "flatcar_vm-configs" {
+  for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
+
+  template = file("${path.module}/configs/flatcar-${each.key}-config.yaml.tmpl")
+
+  vars = {
+    ssh_keys  = jsonencode(var.ssh_keys),
+    name      = each.key,
+    host_name = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
+  }
+}
+
 data "template_file" "rocky_vm-configs" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
@@ -54,11 +66,9 @@ data "template_file" "rocky_vm-configs" {
   vars = {
     ssh_keys  = jsonencode(var.ssh_keys),
     name      = each.key,
-    host_name = "${each.key}.${var.cluster_name}.${var.cluster_domain}"
+    host_name = "${each.key}.${var.cluster_name}.${var.cluster_domain}",
   }
 }
-
-
 
 data "ct_config" "flatcar_vm-ignitions" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "flatcar" }
