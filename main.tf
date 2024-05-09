@@ -1,4 +1,3 @@
-# main.tf
 terraform {
   required_version = ">= 0.13"
 
@@ -95,8 +94,8 @@ resource "libvirt_ignition" "flatcar_ignition" {
 resource "libvirt_cloudinit_disk" "rocky_cloudinit" {
   for_each = { for vm, def in var.vm_definitions : vm => def if def.type == "rocky" }
 
-  name      = "${each.key}-cloudinit.iso"
-  pool      = libvirt_pool.volumetmp.name
+  name    = "${each.key}-cloudinit.iso"
+  pool    = libvirt_pool.volumetmp.name
   user_data = data.template_file.rocky_vm-configs[each.key].rendered
 }
 
