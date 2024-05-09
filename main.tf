@@ -42,6 +42,7 @@ data "libvirt_volume" "base_rocky" {
   pool   = "default"
 }
 
+# Asegúrate de que todos los recursos estén declarados correctamente
 resource "libvirt_volume" "vm_flatcar" {
   for_each = { for k, v in var.vm_definitions if v.type == "flatcar" : k => v }
   name     = "${var.cluster_name}-flatcar-${each.key}"
@@ -57,6 +58,7 @@ resource "libvirt_volume" "vm_rocky" {
   pool     = libvirt_pool.volumetmp.name
   format   = "qcow2"
 }
+
 
 resource "libvirt_domain" "vm" {
   for_each = var.vm_definitions
