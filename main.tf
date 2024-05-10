@@ -19,13 +19,14 @@ provider "libvirt" {
 resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
+  domain    = var.cluster_domain
   addresses = ["10.17.3.0/24"]
 
   dhcp {
     enabled = true
-    ranges {
+    {
       start = "10.17.3.100"
-      end   = "10.17.3.200"
+      stop  = "10.17.3.200"
     }
   }
 }
