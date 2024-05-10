@@ -20,10 +20,6 @@ resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
   addresses = ["10.17.3.0/24"]
-  dns {
-    enabled    = true
-    local_only = true
-  }
   dhcp {
     enabled = true
     ranges {
@@ -78,18 +74,12 @@ resource "libvirt_domain" "vm_flatcar" {
 
   network_interface {
     network_id     = libvirt_network.kube_network.id
-    addresses      = [each.value.ip]
     wait_for_lease = true
+    addresses      = [each.value.ip]
   }
 
   disk {
     volume_id = libvirt_volume.vm_flatcar_clone[each.key].id
-  }
-
-  console {
-    type        = "pty"
-    target_port = "0"
-    target_type = "serial"
   }
 
   graphics {
@@ -108,18 +98,12 @@ resource "libvirt_domain" "vm_rocky" {
 
   network_interface {
     network_id     = libvirt_network.kube_network.id
-    addresses      = [each.value.ip]
     wait_for_lease = true
+    addresses      = [each.value.ip]
   }
 
   disk {
     volume_id = libvirt_volume.vm_rocky_clone[each.key].id
-  }
-
-  console {
-    type        = "pty"
-    target_port = "0"
-    target_type = "serial"
   }
 
   graphics {
