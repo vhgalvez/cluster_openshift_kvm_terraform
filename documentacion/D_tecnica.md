@@ -25,3 +25,5 @@ Policy deny_unknown status:     allowed
 Memory protection checking:     actual (secure)
 Max kernel policy version:      33
 [victory@server cluster_openshift_kvm_terraform]$
+
+sudo dnf install arp-scan

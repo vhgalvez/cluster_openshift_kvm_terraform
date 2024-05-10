@@ -5,6 +5,10 @@ terraform {
       source  = "dmacvicar/libvirt"
       version = "0.7.0"
     }
+    ct = {
+      source  = "poseidon/ct"
+      version = "0.10.0"
+    }
     template = {
       source  = "hashicorp/template"
       version = "~> 2.2.0"
@@ -20,10 +24,6 @@ resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
   addresses = ["10.17.3.0/24"]
-  dns {
-    enabled    = true
-    local_only = true
-  }
 }
 
 resource "libvirt_pool" "volumetmp" {
@@ -34,14 +34,14 @@ resource "libvirt_pool" "volumetmp" {
 
 resource "libvirt_volume" "base_flatcar" {
   name   = "flatcar_production_qemu_image.img"
-  pool   = libvirt_pool.volumetmp.name
+  pool   = "default"
   source = var.flatcar_base_image
   format = "qcow2"
 }
 
 resource "libvirt_volume" "base_rocky" {
   name   = "Rocky-9-GenericCloud-Base.latest.x86_64.qcow2"
-  pool   = libvirt_pool.volumetmp.name
+  pool   = "default"
   source = var.rocky_base_image
   format = "qcow2"
 }
@@ -50,7 +50,7 @@ resource "libvirt_volume" "vm_flatcar_clone" {
   for_each       = var.vm_definitions
   name           = "${each.key}_flatcar.qcow2"
   base_volume_id = libvirt_volume.base_flatcar.id
-  pool           = libvirt_pool.volumetmp.name
+  pool           = "default"
   format         = "qcow2"
 }
 
@@ -58,7 +58,7 @@ resource "libvirt_volume" "vm_rocky_clone" {
   for_each       = var.vm_rockylinux_definitions
   name           = "${each.key}_rocky.qcow2"
   base_volume_id = libvirt_volume.base_rocky.id
-  pool           = libvirt_pool.volumetmp.name
+  pool           = "default"
   format         = "qcow2"
 }
 
@@ -71,8 +71,8 @@ resource "libvirt_domain" "vm_flatcar" {
 
   network_interface {
     network_id     = libvirt_network.kube_network.id
-    addresses      = [each.value.ip]
     wait_for_lease = true
+    addresses      = [each.value.ip]
   }
 
   disk {
@@ -95,8 +95,8 @@ resource "libvirt_domain" "vm_rocky" {
 
   network_interface {
     network_id     = libvirt_network.kube_network.id
-    addresses      = [each.value.ip]
     wait_for_lease = true
+    addresses      = [each.value.ip]
   }
 
   disk {
