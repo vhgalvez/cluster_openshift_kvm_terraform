@@ -23,13 +23,10 @@ resource "libvirt_network" "kube_network" {
   addresses = ["10.17.3.0/24"]
   dhcp {
     enabled = true
-    range {
-      start = "10.17.3.100"
-      end   = "10.17.3.200"
-    }
+    start   = "10.17.3.100"
+    end     = "10.17.3.200"
   }
 }
-
 resource "libvirt_pool" "volumetmp" {
   name = var.cluster_name
   type = "dir"
