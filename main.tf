@@ -16,20 +16,21 @@ provider "libvirt" {
   uri = "qemu:///system"
 }
 
+
+
 resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
-  domain    = var.cluster_domain
   addresses = ["10.17.3.0/24"]
 
   dhcp {
     enabled = true
-    start   = "10.17.3.100"
-    end     = "10.17.3.200"
+    ranges {
+      start = "10.17.3.100"
+      end   = "10.17.3.200"
+    }
   }
 }
-
-
 
 
 
