@@ -17,14 +17,16 @@ provider "libvirt" {
 }
 
 resource "libvirt_network" "kube_network" {
-  name      = "kube_network"
-  mode      = "nat"
+  name   = "kube_network"
+  mode   = "nat"
+  domain = var.cluster_domain
   addresses = ["10.17.3.0/24"]
+
   dhcp {
     enabled = true
     ranges {
       start = "10.17.3.100"
-      end   = "10.17.3.254"
+      end   = "10.17.3.200"
     }
   }
 }
@@ -75,7 +77,6 @@ resource "libvirt_domain" "vm_flatcar" {
   network_interface {
     network_id     = libvirt_network.kube_network.id
     wait_for_lease = true
-    addresses      = [each.value.ip]
   }
 
   disk {
@@ -99,7 +100,6 @@ resource "libvirt_domain" "vm_rocky" {
   network_interface {
     network_id     = libvirt_network.kube_network.id
     wait_for_lease = true
-    addresses      = [each.value.ip]
   }
 
   disk {
