@@ -24,6 +24,13 @@ resource "libvirt_network" "kube_network" {
     enabled    = true
     local_only = true
   }
+  dhcp {
+    enabled = true
+    ranges {
+      start = "10.17.3.100"
+      end   = "10.17.3.254"
+    }
+  }
 }
 
 resource "libvirt_pool" "volumetmp" {
@@ -79,6 +86,12 @@ resource "libvirt_domain" "vm_flatcar" {
     volume_id = libvirt_volume.vm_flatcar_clone[each.key].id
   }
 
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
+  }
+
   graphics {
     type        = "vnc"
     listen_type = "address"
@@ -101,6 +114,12 @@ resource "libvirt_domain" "vm_rocky" {
 
   disk {
     volume_id = libvirt_volume.vm_rocky_clone[each.key].id
+  }
+
+  console {
+    type        = "pty"
+    target_port = "0"
+    target_type = "serial"
   }
 
   graphics {
