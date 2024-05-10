@@ -15,6 +15,8 @@ terraform {
 provider "libvirt" {
   uri = "qemu:///system"
 }
+
+
 resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
@@ -23,10 +25,7 @@ resource "libvirt_network" "kube_network" {
 
   dhcp {
     enabled = true
-    ip {
-      start = "10.17.3.100"
-      end   = "10.17.3.200"
-    }
+    ranges  = ["10.17.3.100-10.17.3.200"]
   }
 }
 
