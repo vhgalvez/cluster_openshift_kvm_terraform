@@ -16,6 +16,7 @@ provider "libvirt" {
   uri = "qemu:///system"
 }
 
+
 resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
@@ -27,6 +28,9 @@ resource "libvirt_network" "kube_network" {
     end     = "10.17.3.200"
   }
 }
+
+
+
 resource "libvirt_pool" "volumetmp" {
   name = var.cluster_name
   type = "dir"
