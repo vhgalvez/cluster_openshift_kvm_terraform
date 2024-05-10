@@ -16,7 +16,6 @@ provider "libvirt" {
   uri = "qemu:///system"
 }
 
-
 resource "libvirt_network" "kube_network" {
   name      = "kube_network"
   mode      = "nat"
